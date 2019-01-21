@@ -28,7 +28,7 @@
   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-  
+
   ** Original License
 
   (C) 2016 Matthew Wild <mwild1@gmail.com>
@@ -71,11 +71,12 @@ $CONFIG_CHUNK_SIZE = 4096;
 
 /* Do not edit below this line unless you know what you are doing (spoiler: nobody does) */
 
-$upload_file_name = substr($_SERVER['PHP_SELF'], strlen($_SERVER['SCRIPT_NAME'])+1);
+$uri_parts = explode('?', $_SERVER['REQUEST_URI'], 2);
+$upload_file_name = $uri_parts[0];
+$upload_file_name_trim = ltrim($upload_file_name, '/');
 $store_file_name = $CONFIG_STORE_DIR . '/store-' . hash('sha256', $upload_file_name);
 
 $request_method = $_SERVER['REQUEST_METHOD'];
-
 /* Set CORS headers */
 header('Access-Control-Allow-Methods: DELETE, GET, HEAD, OPTIONS, PUT');
 header('Access-Control-Allow-Headers: Content-Type, Origin, X-Requested-With');
@@ -99,7 +100,7 @@ if(array_key_exists('token', $_GET) === TRUE && ($request_method === 'PUT' || $r
 	}
 
 	if($request_method === 'PUT') {
-		$calculated_token = hash_hmac('sha256', "$upload_file_name\0$upload_file_size\0$upload_file_type", $CONFIG_SECRET);
+		$calculated_token = hash_hmac('sha256', "$upload_file_name_trim\0$upload_file_size\0$upload_file_type", $CONFIG_SECRET);
 		if(function_exists('hash_equals')) {
 			if(hash_equals($calculated_token, $upload_token) !== TRUE) {
 				error_log("Token mismatch: calculated $calculated_token got $upload_token");
@@ -114,7 +115,7 @@ if(array_key_exists('token', $_GET) === TRUE && ($request_method === 'PUT' || $r
 				exit;
 			}
 		}
-	
+
 		/* Open a file for writing */
 		$store_file = fopen($store_file_name, 'x');
 
